@@ -326,7 +326,7 @@
 - **Exclusions**: Higher-order derivatives (Hessian).
 
 ### TC-0207: Mean Squared Error (MSE) Loss Class
-- **Status**: NOT STARTED
+- **Status**: DONE - VERIFIED (Implemented in engine/src/losses.cpp, unit tests & finite-difference gradient checks pass in 	est_losses.cpp)
 - **Priority**: P0 | **Area**: Loss
 - **Scope**: `MSELoss` class calculating scalar loss and analytical input gradients (`2*(pred - target)/N`).
 - **Exclusions**: Huber loss.

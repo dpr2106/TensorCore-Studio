@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.20)
 project(tensorcore_engine VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -27,3 +27,7 @@ add_test(NAME TensorUnitTests COMMAND test_tensor)
 add_executable(test_layers tests/test_layers.cpp)
 target_link_libraries(test_layers PRIVATE tensorcore)
 add_test(NAME LayerUnitTests COMMAND test_layers)
+
+add_executable(test_losses tests/test_losses.cpp)
+target_link_libraries(test_losses PRIVATE tensorcore)
+add_test(NAME LossUnitTests COMMAND test_losses)
