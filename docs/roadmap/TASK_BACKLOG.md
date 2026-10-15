@@ -1,4 +1,4 @@
-﻿# TensorCore Studio - Master Engineering Task Backlog
+# TensorCore Studio - Master Engineering Task Backlog
 
 
 ## Task Classification Taxonomy
@@ -131,7 +131,7 @@
 - **Exclusions**: Multi-axis broadcasting.
 
 ### TC-0105: Multi-Dimensional Numpy-Style Broadcasting
-- **Status**: NOT STARTED
+- **Status**: DONE - VERIFIED (Implemented in engine/src/tensor.cpp, 6 test suites pass in 	est_tensor.cpp)
 - **Priority**: P1 | **Area**: C++ Engine
 - **Scope**: General broadcasting supporting trailing dimension expansion (e.g. `[B, C] + [1, C]`).
 - **Exclusions**: In-place broadcasting on non-contiguous memory.
