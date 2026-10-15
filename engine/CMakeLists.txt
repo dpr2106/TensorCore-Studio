@@ -17,9 +17,13 @@ include_directories(include)
 file(GLOB_RECURSE ENGINE_SOURCES "src/*.cpp")
 add_library(tensorcore STATIC ${ENGINE_SOURCES})
 
-# Test executable
+# Test executables
 enable_testing()
+
 add_executable(test_tensor tests/test_tensor.cpp)
 target_link_libraries(test_tensor PRIVATE tensorcore)
+add_test(NAME TensorUnitTests COMMAND test_tensor)
 
-add_test(NAME EngineUnitTests COMMAND test_tensor)
+add_executable(test_layers tests/test_layers.cpp)
+target_link_libraries(test_layers PRIVATE tensorcore)
+add_test(NAME LayerUnitTests COMMAND test_layers)
