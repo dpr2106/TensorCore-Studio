@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <vector>
 #include <memory>
@@ -35,6 +35,38 @@ inline Strides compute_default_strides(const Shape& shape) {
     return strides;
 }
 
+// Computes standard NumPy-style broadcasted output shape for two shapes.
+// Dimensions are aligned from the right (trailing dimensions).
+// Each pair of dimensions must either be equal or one of them must be 1.
+inline Shape broadcast_shapes(const Shape& s1, const Shape& s2) {
+    size_t r1 = s1.size();
+    size_t r2 = s2.size();
+    size_t out_rank = std::max(r1, r2);
+    Shape out_shape(out_rank);
+
+    for (size_t i = 0; i < out_rank; ++i) {
+        size_t d1 = (i < r1) ? s1[r1 - 1 - i] : 1;
+        size_t d2 = (i < r2) ? s2[r2 - 1 - i] : 1;
+
+        if (d1 == d2) {
+            out_shape[out_rank - 1 - i] = d1;
+        } else if (d1 == 1) {
+            out_shape[out_rank - 1 - i] = d2;
+        } else if (d2 == 1) {
+            out_shape[out_rank - 1 - i] = d1;
+        } else {
+            std::ostringstream oss;
+            oss << "Cannot broadcast shapes [";
+            for (size_t j = 0; j < s1.size(); ++j) oss << s1[j] << (j + 1 < s1.size() ? ", " : "");
+            oss << "] and [";
+            for (size_t j = 0; j < s2.size(); ++j) oss << s2[j] << (j + 1 < s2.size() ? ", " : "");
+            oss << "]: dimension mismatch at aligned index " << i << " (" << d1 << " vs " << d2 << ")";
+            throw std::invalid_argument(oss.str());
+        }
+    }
+    return out_shape;
+}
+
 class Tensor {
 public:
     Tensor();
@@ -62,7 +94,7 @@ public:
     static Tensor uniform(const Shape& shape, float low, float high, uint32_t seed = 42);
     static Tensor xavier_uniform(size_t fan_in, size_t fan_out, uint32_t seed = 42);
 
-    // Basic arithmetic operations
+    // Basic arithmetic operations (with NumPy-style broadcasting support)
     Tensor add(const Tensor& other) const;
     Tensor sub(const Tensor& other) const;
     Tensor mul(const Tensor& other) const; // Element-wise

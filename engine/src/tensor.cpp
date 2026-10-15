@@ -1,4 +1,4 @@
-﻿#include "tensorcore/tensor.hpp"
+#include "tensorcore/tensor.hpp"
 #include <iomanip>
 #include <algorithm>
 #include <cassert>
@@ -75,37 +75,98 @@ Tensor Tensor::xavier_uniform(size_t fan_in, size_t fan_out, uint32_t seed) {
     return uniform({fan_in, fan_out}, -limit, limit, seed);
 }
 
-Tensor Tensor::add(const Tensor& other) const {
-    if (shape_ != other.shape_) {
-        throw std::invalid_argument("Tensor shapes must match for element-wise addition.");
+namespace {
+// Helper for binary element-wise operations with NumPy-style broadcasting support.
+template <typename Op>
+Tensor binary_op_broadcast(const Tensor& a, const Tensor& b, Op op) {
+    // Fast path: identical shapes need zero index-translation overhead.
+    if (a.shape() == b.shape()) {
+        Tensor result(a.shape());
+        size_t n = a.size();
+        const float* da = a.data();
+        const float* db = b.data();
+        float* dr = result.data();
+        for (size_t i = 0; i < n; ++i) {
+            dr[i] = op(da[i], db[i]);
+        }
+        return result;
     }
-    Tensor result(shape_);
-    for (size_t i = 0; i < size_; ++i) {
-        result[i] = data_[i] + other[i];
+
+    // Broadcast path: determine broadcast output shape and effective strides.
+    Shape out_shape = broadcast_shapes(a.shape(), b.shape());
+    size_t out_rank = out_shape.size();
+    size_t out_size = compute_size(out_shape);
+
+    if (out_size == 0) {
+        return Tensor(out_shape);
+    }
+
+    // Compute effective strides for `a` and `b` relative to `out_shape`.
+    // When dimension is 1 or missing, stride is 0 so the coordinate does not advance the pointer.
+    Strides eff_strides_a(out_rank, 0);
+    Strides eff_strides_b(out_rank, 0);
+
+    size_t ra = a.shape().size();
+    size_t rb = b.shape().size();
+
+    for (size_t i = 0; i < out_rank; ++i) {
+        size_t idx_from_right = out_rank - 1 - i;
+
+        if (i < ra) {
+            size_t a_dim = a.shape()[ra - 1 - i];
+            if (a_dim != 1) {
+                eff_strides_a[idx_from_right] = a.strides()[ra - 1 - i];
+            }
+        }
+        if (i < rb) {
+            size_t b_dim = b.shape()[rb - 1 - i];
+            if (b_dim != 1) {
+                eff_strides_b[idx_from_right] = b.strides()[rb - 1 - i];
+            }
+        }
+    }
+
+    Tensor result(out_shape);
+    const float* da = a.data();
+    const float* db = b.data();
+    float* dr = result.data();
+
+    std::vector<size_t> coord(out_rank, 0);
+    size_t offset_a = 0;
+    size_t offset_b = 0;
+
+    for (size_t out_idx = 0; out_idx < out_size; ++out_idx) {
+        dr[out_idx] = op(da[offset_a], db[offset_b]);
+
+        // Increment N-dimensional coordinate and update linear offsets
+        for (int d = static_cast<int>(out_rank) - 1; d >= 0; --d) {
+            coord[d]++;
+            offset_a += eff_strides_a[d];
+            offset_b += eff_strides_b[d];
+
+            if (coord[d] < out_shape[d]) {
+                break;
+            }
+            // Dimension rolled over: reset coordinate and subtract cumulative stride
+            offset_a -= coord[d] * eff_strides_a[d];
+            offset_b -= coord[d] * eff_strides_b[d];
+            coord[d] = 0;
+        }
     }
     return result;
+}
+} // namespace
+
+Tensor Tensor::add(const Tensor& other) const {
+    return binary_op_broadcast(*this, other, [](float x, float y) { return x + y; });
 }
 
 Tensor Tensor::sub(const Tensor& other) const {
-    if (shape_ != other.shape_) {
-        throw std::invalid_argument("Tensor shapes must match for element-wise subtraction.");
-    }
-    Tensor result(shape_);
-    for (size_t i = 0; i < size_; ++i) {
-        result[i] = data_[i] - other[i];
-    }
-    return result;
+    return binary_op_broadcast(*this, other, [](float x, float y) { return x - y; });
 }
 
 Tensor Tensor::mul(const Tensor& other) const {
-    if (shape_ != other.shape_) {
-        throw std::invalid_argument("Tensor shapes must match for element-wise multiplication.");
-    }
-    Tensor result(shape_);
-    for (size_t i = 0; i < size_; ++i) {
-        result[i] = data_[i] * other[i];
-    }
-    return result;
+    return binary_op_broadcast(*this, other, [](float x, float y) { return x * y; });
 }
 
 Tensor Tensor::scale(float scalar) const {
