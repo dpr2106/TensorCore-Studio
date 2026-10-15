@@ -314,7 +314,7 @@
 - **Exclusions**: Alpha dropout.
 
 ### TC-0205: Sequential Container Module
-- **Status**: NOT STARTED
+- **Status**: DONE - VERIFIED (Implemented in engine/src/layers.cpp, 4/4 test suites pass in 	est_sequential.cpp)
 - **Priority**: P1 | **Area**: Layers
 - **Scope**: Sequential wrapper managing an ordered list of `std::shared_ptr<Layer>` executing cascaded forward/backward passes.
 - **Exclusions**: Multi-branch residual connections.

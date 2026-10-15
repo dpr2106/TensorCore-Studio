@@ -1,7 +1,9 @@
-﻿#pragma once
+#pragma once
 
 #include "tensorcore/tensor.hpp"
 #include <string>
+#include <vector>
+#include <memory>
 
 namespace tensorcore {
 
@@ -11,6 +13,11 @@ public:
     virtual Tensor forward(const Tensor& input) = 0;
     virtual Tensor backward(const Tensor& grad_output) = 0;
     virtual std::string name() const = 0;
+
+    // Parameter introspection interface
+    virtual std::vector<Tensor*> parameters() { return {}; }
+    virtual std::vector<Tensor*> gradients() { return {}; }
+    virtual void zero_grad() {}
 };
 
 class Linear : public Layer {
@@ -29,7 +36,15 @@ public:
     Tensor& grad_weights() { return grad_weights_; }
     Tensor& grad_bias() { return grad_bias_; }
 
-    void zero_grad();
+    std::vector<Tensor*> parameters() override {
+        return {&weights_, &bias_};
+    }
+
+    std::vector<Tensor*> gradients() override {
+        return {&grad_weights_, &grad_bias_};
+    }
+
+    void zero_grad() override;
 
 private:
     size_t in_features_;
@@ -49,6 +64,28 @@ public:
 
 private:
     Tensor last_input_;
+};
+
+class Sequential : public Layer {
+public:
+    Sequential() = default;
+    explicit Sequential(std::vector<std::shared_ptr<Layer>> layers);
+
+    void add(std::shared_ptr<Layer> layer);
+
+    Tensor forward(const Tensor& input) override;
+    Tensor backward(const Tensor& grad_output) override;
+    std::string name() const override { return "Sequential"; }
+
+    std::vector<Tensor*> parameters() override;
+    std::vector<Tensor*> gradients() override;
+    void zero_grad() override;
+
+    const std::vector<std::shared_ptr<Layer>>& layers() const { return layers_; }
+    size_t size() const { return layers_.size(); }
+
+private:
+    std::vector<std::shared_ptr<Layer>> layers_;
 };
 
 } // namespace tensorcore
