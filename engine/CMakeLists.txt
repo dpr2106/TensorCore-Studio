@@ -35,3 +35,7 @@ add_test(NAME LossUnitTests COMMAND test_losses)
 add_executable(test_sequential tests/test_sequential.cpp)
 target_link_libraries(test_sequential PRIVATE tensorcore)
 add_test(NAME SequentialUnitTests COMMAND test_sequential)
+
+add_executable(test_trainer tests/test_trainer.cpp)
+target_link_libraries(test_trainer PRIVATE tensorcore)
+add_test(NAME TrainerUnitTests COMMAND test_trainer)
