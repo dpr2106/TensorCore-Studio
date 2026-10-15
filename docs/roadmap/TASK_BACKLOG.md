@@ -285,6 +285,12 @@
 - **Priority**: P3 | **Area**: C++ Engine
 - **Scope**: Generate `version.hpp` with git commit hash, compiler flags, and target architecture strings.
 - **Exclusions**: Dynamic runtime patching.
+
+### TC-0131: C++ CSV Dataset Loader & Training Pipeline Harness
+- **Status**: DONE - VERIFIED (Implemented in engine/src/dataset.cpp & engine/src/trainer.cpp, 5/5 test suites pass in 	est_trainer.cpp)
+- **Priority**: P0 | **Area**: C++ Engine
+- **Scope**: CSV parser extracting numeric features and targets into 2D Tensors with comprehensive validation, paired with a full-batch training harness and history tracking.
+- **Exclusions**: Mini-batching, validation splits, and cloud persistence.
 ---
 
 ## Epic 3: Autograd, Neural Network Layers & Optimizers (TC-0201 - TC-0225)
