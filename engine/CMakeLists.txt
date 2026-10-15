@@ -31,3 +31,7 @@ add_test(NAME LayerUnitTests COMMAND test_layers)
 add_executable(test_losses tests/test_losses.cpp)
 target_link_libraries(test_losses PRIVATE tensorcore)
 add_test(NAME LossUnitTests COMMAND test_losses)
+
+add_executable(test_sequential tests/test_sequential.cpp)
+target_link_libraries(test_sequential PRIVATE tensorcore)
+add_test(NAME SequentialUnitTests COMMAND test_sequential)

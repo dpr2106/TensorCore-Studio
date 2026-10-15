@@ -1,4 +1,4 @@
-﻿#include "tensorcore/layers.hpp"
+#include "tensorcore/layers.hpp"
 
 namespace tensorcore {
 
@@ -14,14 +14,8 @@ Tensor Linear::forward(const Tensor& input) {
     last_input_ = input.clone();
     // Y = X * W + b
     Tensor out = input.matmul(weights_);
-    // Add broadcasted bias along rows
-    size_t batch_size = out.shape()[0];
-    for (size_t b = 0; b < batch_size; ++b) {
-        for (size_t c = 0; c < out_features_; ++c) {
-            out.at({b, c}) += bias_[c];
-        }
-    }
-    return out;
+    // Broadcast addition of bias [1, out_features] across batch rows
+    return out.add(bias_);
 }
 
 Tensor Linear::backward(const Tensor& grad_output) {
@@ -57,6 +51,56 @@ Tensor ReLU::forward(const Tensor& input) {
 
 Tensor ReLU::backward(const Tensor& grad_output) {
     return last_input_.relu_backward(grad_output);
+}
+
+// ----------------- Sequential Container ----------------- //
+
+Sequential::Sequential(std::vector<std::shared_ptr<Layer>> layers)
+    : layers_(std::move(layers)) {}
+
+void Sequential::add(std::shared_ptr<Layer> layer) {
+    layers_.push_back(std::move(layer));
+}
+
+Tensor Sequential::forward(const Tensor& input) {
+    Tensor current = input;
+    for (auto& layer : layers_) {
+        current = layer->forward(current);
+    }
+    return current;
+}
+
+Tensor Sequential::backward(const Tensor& grad_output) {
+    Tensor current_grad = grad_output;
+    // Reverse backward propagation
+    for (int i = static_cast<int>(layers_.size()) - 1; i >= 0; --i) {
+        current_grad = layers_[i]->backward(current_grad);
+    }
+    return current_grad;
+}
+
+std::vector<Tensor*> Sequential::parameters() {
+    std::vector<Tensor*> all_params;
+    for (auto& layer : layers_) {
+        auto params = layer->parameters();
+        all_params.insert(all_params.end(), params.begin(), params.end());
+    }
+    return all_params;
+}
+
+std::vector<Tensor*> Sequential::gradients() {
+    std::vector<Tensor*> all_grads;
+    for (auto& layer : layers_) {
+        auto grads = layer->gradients();
+        all_grads.insert(all_grads.end(), grads.begin(), grads.end());
+    }
+    return all_grads;
+}
+
+void Sequential::zero_grad() {
+    for (auto& layer : layers_) {
+        layer->zero_grad();
+    }
 }
 
 } // namespace tensorcore
